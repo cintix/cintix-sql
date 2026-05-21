@@ -17,7 +17,7 @@ export function ResultPanel() {
       const main = document.querySelector('.content-area');
       if (main) {
         const rect = main.getBoundingClientRect();
-        setResizerHeight(Math.max(100, rect.bottom - e.clientY));
+        setResizerHeight(Math.max(60, rect.bottom - e.clientY));
       }
     };
     const handleMouseUp = () => {
@@ -66,6 +66,23 @@ export function ResultPanel() {
     return header + '\n' + sep + '\n' + body;
   };
 
+  const toSQL = (): string => {
+    if (!results || !results.columns.length) return '';
+    const cols = results.columns;
+    const rows = results.rows as unknown[][];
+    return rows.map(row => {
+      const vals = row.map((c: unknown) => {
+        if (c === null || c === undefined) return 'NULL';
+        return `'${String(c).replace(/'/g, "''")}'`;
+      });
+      return `INSERT INTO table_name (${cols.map(c => `"${c}"`).join(', ')}) VALUES (${vals.join(', ')});`;
+    }).join('\n') + '\n';
+  };
+
+  const ensureExt = (p: string, ext: string): string => {
+    return p.endsWith(`.${ext}`) ? p : `${p}.${ext}`;
+  };
+
   const exportResult = async (format: string) => {
     let content: string;
     let ext: string;
@@ -73,13 +90,14 @@ export function ResultPanel() {
       case 'csv': content = toCSV(); ext = 'csv'; break;
       case 'json': content = toJSON(); ext = 'json'; break;
       case 'md': content = toMarkdown(); ext = 'md'; break;
+      case 'sql': content = toSQL(); ext = 'sql'; break;
       default: return;
     }
     try {
       const { save } = await import('@tauri-apps/plugin-dialog');
       const path = await save({ filters: [{ name: `${format.toUpperCase()} Files`, extensions: [ext] }] });
       if (path) {
-        await invoke('write_file', { path, content });
+        await invoke('write_file', { path: ensureExt(path as string, ext), content });
       }
     } catch (_) {}
   };
@@ -94,7 +112,7 @@ export function ResultPanel() {
     return (
       <>
         <div className="resizer" onMouseDown={handleMouseDown} />
-        <div className="result-panel" style={{ height: resizerHeight }}>
+        <div className="result-panel" style={{ height: resizerHeight, maxHeight: 'none', flex: 'none' }}>
           <EditGrid
             columns={results.columns}
             rows={results.rows as unknown[][]}
@@ -133,6 +151,7 @@ export function ResultPanel() {
                 <button className="btn btn-sm" onClick={() => exportResult('csv')} title="Export as CSV">CSV</button>
                 <button className="btn btn-sm" onClick={() => exportResult('json')} title="Export as JSON">JSON</button>
                 <button className="btn btn-sm" onClick={() => exportResult('md')} title="Export as Markdown">MD</button>
+                <button className="btn btn-sm" onClick={() => exportResult('sql')} title="Export as SQL INSERT">SQL</button>
               </>
             )}
           </div>

@@ -368,8 +368,7 @@ html, body, #root {
 
 /* ===== RESULT PANEL ===== */
 .result-panel {
-  min-height: 120px;
-  max-height: 50%;
+  min-height: 100px;
   background: var(--bg-primary);
   border-top: 1px solid var(--border-color);
   display: flex;

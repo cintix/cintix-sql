@@ -92,12 +92,9 @@ export default function App() {
         case 'execute':
           if (store.activeTabId) store.executeQuery(store.activeTabId);
           break;
-        case 'format_sql': {
-          // Monaco handles this via its own action; trigger via keyboard simulation
-          const ed = document.querySelector('.monaco-editor') as HTMLElement | null;
-          if (ed) ed.dispatchEvent(new KeyboardEvent('keydown', { key: 'F', ctrlKey: true, shiftKey: true, bubbles: true }));
+        case 'format_sql':
+          store.triggerFormat();
           break;
-        }
         case 'toggle_theme':
           store.toggleTheme();
           break;

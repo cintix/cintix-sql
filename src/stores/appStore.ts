@@ -22,6 +22,7 @@ interface AppState {
   schemaError: string | null;
   expandedSections: Record<string, boolean>;
   contextMenu: { x: number; y: number; object: SchemaObject } | null;
+  formatTrigger: number;
 
   loadProfiles: () => Promise<void>;
   addTab: () => void;
@@ -47,6 +48,7 @@ interface AppState {
   showContextMenu: (x: number, y: number, object: SchemaObject) => void;
   hideContextMenu: () => void;
   getObjectScript: (object: SchemaObject) => Promise<string>;
+  triggerFormat: () => void;
 }
 
 function nextTabNumber(tabs: QueryTab[]): number {
@@ -91,6 +93,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   schemaError: null,
   expandedSections: { tables: true, views: true, functions: false, procedures: false },
   contextMenu: null,
+  formatTrigger: 0,
+
+  triggerFormat: () => set((s) => ({ formatTrigger: s.formatTrigger + 1 })),
 
   loadProfiles: async () => {
     try {

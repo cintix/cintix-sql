@@ -6,7 +6,7 @@ import { useAppStore } from '../stores/appStore';
 export function EditorPanel() {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<any>(null);
-  const { tabs, activeTabId, updateQuery, theme } = useAppStore();
+  const { tabs, activeTabId, updateQuery, theme, formatTrigger } = useAppStore();
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
@@ -15,6 +15,13 @@ export function EditorPanel() {
       monacoRef.current.editor.setTheme(theme === 'dark' ? 'cintix-dark' : 'cintix-light');
     }
   }, [theme]);
+
+  useEffect(() => {
+    if (editorRef.current && formatTrigger > 0) {
+      const action = editorRef.current.getAction('format-sql');
+      if (action) action.run();
+    }
+  }, [formatTrigger]);
 
   const handleMount: OnMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
