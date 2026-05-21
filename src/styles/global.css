@@ -200,13 +200,12 @@ html, body, #root {
 
 /* ===== SIDEBAR ===== */
 .sidebar {
-  width: 220px;
-  min-width: 180px;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  height: 100%;
 }
 
 .sidebar-header {
@@ -336,7 +335,7 @@ html, body, #root {
 /* ===== EDITOR PANEL ===== */
 .editor-panel {
   flex: 1;
-  min-height: 200px;
+  min-height: 40px;
   overflow: hidden;
 }
 

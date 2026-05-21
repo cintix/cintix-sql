@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { Toolbar } from './components/Toolbar';
 import { Sidebar } from './components/Sidebar';
@@ -12,6 +12,7 @@ import { useAppStore } from './stores/appStore';
 export default function App() {
   const loadProfiles = useAppStore((s) => s.loadProfiles);
   const theme = useAppStore((s) => s.theme);
+  const [sidebarWidth, setSidebarWidth] = useState(220);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -31,7 +32,6 @@ export default function App() {
           store.addTab();
           break;
         case 'open_file': {
-          // Triggered by menu — handled via dialog in toolbar logic
           import('@tauri-apps/plugin-dialog').then(({ open }) => {
             import('@tauri-apps/api/core').then(({ invoke }) => {
               open({ multiple: false, filters: [{ name: 'SQL Files', extensions: ['sql'] }] }).then((path) => {
@@ -107,7 +107,6 @@ export default function App() {
       }
     });
 
-    // Keyboard shortcut for Ctrl+T (backup if menu accelerator doesn't work)
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 't') {
         e.preventDefault();
@@ -122,11 +121,37 @@ export default function App() {
     };
   }, []);
 
+  const handleSidebarResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+    const handleMouseMove = (ev: MouseEvent) => {
+      setSidebarWidth(Math.max(160, Math.min(500, startWidth + (ev.clientX - startX))));
+    };
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
   return (
     <div className="app-container">
       <Toolbar />
       <div className="main-content">
-        <Sidebar />
+        <div style={{ width: sidebarWidth, minWidth: sidebarWidth, flexShrink: 0 }}>
+          <Sidebar />
+        </div>
+        <div
+          onMouseDown={handleSidebarResize}
+          style={{
+            width: 4, cursor: 'col-resize', background: 'var(--border-color)',
+            flexShrink: 0, transition: 'background 0.15s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-blue)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--border-color)'; }}
+        />
         <div className="content-area">
           <TabBar />
           <EditorPanel />
