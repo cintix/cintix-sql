@@ -131,6 +131,7 @@ pub fn run() {
             commands::get_object_script,
             commands::read_file,
             commands::write_file,
+            commands::get_columns,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

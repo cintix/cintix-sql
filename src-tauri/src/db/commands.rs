@@ -458,3 +458,51 @@ pub fn read_file(path: String) -> Result<String, String> {
 pub fn write_file(path: String, content: String) -> Result<(), String> {
     fs::write(&path, &content).map_err(|e| format!("Cannot write file: {}", e))
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ColumnInfo {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub data_type: String,
+    pub nullable: bool,
+}
+
+#[tauri::command]
+pub async fn get_columns(
+    state: State<'_, AppState>,
+    profile_id: String,
+    schema_name: String,
+    table_name: String,
+) -> Result<Vec<ColumnInfo>, String> {
+    let conn = {
+        let connections = state.connections.lock().map_err(|e| e.to_string())?;
+        connections.get(&profile_id).cloned().ok_or("Not connected")?
+    };
+
+    match conn {
+        DbConnection::Postgres(pool) => {
+            let rows = sqlx::query(
+                "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2 ORDER BY ordinal_position"
+            )
+            .bind(&schema_name).bind(&table_name)
+            .fetch_all(&pool).await.map_err(|e| e.to_string())?;
+            Ok(rows.iter().map(|r| ColumnInfo {
+                name: r.get(0),
+                data_type: r.get(1),
+                nullable: r.get::<String, _>(2) == "YES",
+            }).collect())
+        }
+        DbConnection::Mysql(pool) => {
+            let rows = sqlx::query(
+                "SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION"
+            )
+            .bind(&schema_name).bind(&table_name)
+            .fetch_all(&pool).await.map_err(|e| e.to_string())?;
+            Ok(rows.iter().map(|r| ColumnInfo {
+                name: r.get(0),
+                data_type: r.get(1),
+                nullable: r.get::<String, _>(2) == "YES",
+            }).collect())
+        }
+    }
+}

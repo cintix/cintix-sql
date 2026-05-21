@@ -50,6 +50,9 @@ interface AppState {
   hideContextMenu: () => void;
   getObjectScript: (object: SchemaObject) => Promise<string>;
   triggerFormat: () => void;
+  expandedObjects: Set<string>;
+  columnCache: Record<string, Array<{ name: string; type: string; nullable: boolean }>>;
+  toggleObjectExpand: (schema: string, name: string, objType: string) => Promise<void>;
 }
 
 function nextTabNumber(tabs: QueryTab[]): number {
@@ -97,6 +100,30 @@ export const useAppStore = create<AppState>((set, get) => ({
   formatTrigger: 0,
 
   triggerFormat: () => set((s) => ({ formatTrigger: s.formatTrigger + 1 })),
+  expandedObjects: new Set<string>(),
+  columnCache: {},
+
+  toggleObjectExpand: async (schema: string, name: string, objType: string) => {
+    const key = `${schema}.${name}`;
+    const { expandedObjects, columnCache, activeProfileId } = get();
+    if (expandedObjects.has(key)) {
+      expandedObjects.delete(key);
+      set({ expandedObjects: new Set(expandedObjects) });
+    } else {
+      expandedObjects.add(key);
+      set({ expandedObjects: new Set(expandedObjects) });
+      if (!columnCache[key] && activeProfileId && (objType === 'table' || objType === 'view')) {
+        try {
+          const cols = await invoke<Array<{ name: string; type: string; nullable: boolean }>>('get_columns', {
+            profileId: activeProfileId,
+            schemaName: schema,
+            tableName: name,
+          });
+          set({ columnCache: { ...get().columnCache, [key]: cols } });
+        } catch (_) {}
+      }
+    }
+  },
 
   loadProfiles: async () => {
     try {

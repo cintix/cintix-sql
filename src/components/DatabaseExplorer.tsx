@@ -47,7 +47,7 @@ export function DatabaseExplorer() {
   const {
     schemaObjects, expandedSections, toggleSection,
     showContextMenu, hideContextMenu, contextMenu,
-    getObjectScript,
+    getObjectScript, expandedObjects, columnCache, toggleObjectExpand,
   } = useAppStore();
 
   const schemas = groupBySchema(schemaObjects);
@@ -172,35 +172,87 @@ export function DatabaseExplorer() {
                   {TYPE_LABELS[type] || type}
                   <span style={{ marginLeft: 'auto', fontSize: 10 }}>{items.length}</span>
                 </div>
-                {items.map((obj) => (
-                  <div
-                    key={`${obj.schema}.${obj.type}.${obj.name}`}
-                    onDoubleClick={() => handleObjectDoubleClick(obj)}
-                    onContextMenu={(e) => handleContextMenu(e, obj)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '5px 12px 5px 40px', cursor: 'pointer',
-                      fontSize: 12.5, borderRadius: 'var(--radius-sm)',
-                      margin: '1px 4px', color: 'var(--text-secondary)',
-                      transition: 'all 0.1s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'var(--bg-hover)';
-                      e.currentTarget.style.color = 'var(--text-primary)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = 'var(--text-secondary)';
-                    }}
-                  >
-                    <span style={{ width: 16, textAlign: 'center', fontSize: 13 }}>
-                      {TYPE_ICONS[obj.type] || '•'}
-                    </span>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {obj.name}
-                    </span>
-                  </div>
-                ))}
+                {items.map((obj) => {
+                  const objKey = `${obj.schema}.${obj.name}`;
+                  const canExpand = obj.type === 'table' || obj.type === 'view';
+                  const isExpanded = expandedObjects.has(objKey);
+                  const columns = columnCache[objKey];
+
+                  return (
+                    <div key={`${obj.schema}.${obj.type}.${obj.name}`}>
+                      <div
+                        onDoubleClick={() => handleObjectDoubleClick(obj)}
+                        onContextMenu={(e) => handleContextMenu(e, obj)}
+                        onClick={() => canExpand && toggleObjectExpand(obj.schema, obj.name, obj.type)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '5px 12px 5px 40px', cursor: 'pointer',
+                          fontSize: 12.5, borderRadius: 'var(--radius-sm)',
+                          margin: '1px 4px', color: 'var(--text-secondary)',
+                          transition: 'all 0.1s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'var(--bg-hover)';
+                          e.currentTarget.style.color = 'var(--text-primary)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.color = 'var(--text-secondary)';
+                        }}
+                      >
+                        {canExpand && (
+                          <span style={{
+                            fontSize: 9, color: 'var(--text-muted)',
+                            transform: isExpanded ? 'rotate(90deg)' : '',
+                            transition: 'transform 0.12s', width: 8, flexShrink: 0,
+                          }}>
+                            ▶
+                          </span>
+                        )}
+                        <span style={{ width: canExpand ? 12 : 16, textAlign: 'center', fontSize: 13 }}>
+                          {TYPE_ICONS[obj.type] || '•'}
+                        </span>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {obj.name}
+                        </span>
+                      </div>
+                      {isExpanded && columns && (
+                        <div style={{ paddingLeft: 60, paddingRight: 4 }}>
+                          {columns.map((col, ci) => (
+                            <div
+                              key={ci}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 8,
+                                padding: '3px 8px', fontSize: 11.5,
+                                color: 'var(--text-muted)',
+                                borderBottom: '1px solid var(--border-color)',
+                              }}
+                            >
+                              <span style={{
+                                width: 6, height: 6, borderRadius: '50%',
+                                background: col.nullable ? 'var(--accent-amber)' : 'var(--accent-blue)',
+                                flexShrink: 0,
+                              }}
+                                title={col.nullable ? 'NULLABLE' : 'NOT NULL'}
+                              />
+                              <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
+                                {col.name}
+                              </span>
+                              <span style={{ marginLeft: 'auto', fontSize: 10, fontFamily: 'var(--font-mono)' }}>
+                                {col.type}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {isExpanded && !columns && (
+                        <div style={{ padding: '2px 12px 2px 60px', fontSize: 11, color: 'var(--text-muted)' }}>
+                          Loading...
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>
