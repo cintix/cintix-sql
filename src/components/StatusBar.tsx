@@ -16,7 +16,7 @@ export function StatusBar() {
       <span className={`status-dot ${connectionStatus}`} />
       <span>{connectionLabel()}</span>
       <span style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>
-        Cintix SQL v0.1.0
+        Cintix SQL v1.0.1
       </span>
     </div>
   );

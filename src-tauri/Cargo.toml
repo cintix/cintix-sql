@@ -1,6 +1,6 @@
 [package]
 name = "cintix-sql"
-version = "0.1.0"
+version = "1.0.1"
 description = "Cintix SQL - Professional SQL Editor"
 authors = ["Cintix"]
 license = "MIT"
