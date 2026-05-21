@@ -173,7 +173,7 @@ export function EditorPanel() {
         }
 
         // Find next ; after cursor (not at exact cursor position)
-        for (let i = Math.max(offset, offset); i < text.length; i++) {
+        for (let i = offset; i < text.length; i++) {
           if (text[i] === ';') {
             end = i;
             break;
