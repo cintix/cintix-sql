@@ -40,6 +40,7 @@ interface AppState {
   connect: (profile: ConnectionProfile) => Promise<void>;
   disconnect: () => Promise<void>;
   executeQuery: (tabId: string) => Promise<void>;
+  executeStatement: (tabId: string, sql: string) => Promise<void>;
   openProfileDialog: (profile?: ConnectionProfile) => void;
   closeProfileDialog: () => void;
   toggleTheme: () => void;
@@ -222,6 +223,25 @@ export const useAppStore = create<AppState>((set, get) => ({
       const results = await invoke<any>('execute_query', {
         profileId: activeProfileId,
         sql: tab.query,
+      });
+      get().setTabResults(tabId, results);
+      get().setTabExecuting(tabId, false);
+    } catch (e: any) {
+      get().setTabError(tabId, typeof e === 'string' ? e : e.message || 'Unknown error');
+      get().setTabExecuting(tabId, false);
+    }
+  },
+
+  executeStatement: async (tabId: string, sql: string) => {
+    const { activeProfileId, connectionStatus } = get();
+    if (connectionStatus !== 'connected' || !activeProfileId) return;
+    if (!sql.trim()) return;
+
+    get().setTabExecuting(tabId, true);
+    try {
+      const results = await invoke<any>('execute_query', {
+        profileId: activeProfileId,
+        sql,
       });
       get().setTabResults(tabId, results);
       get().setTabExecuting(tabId, false);

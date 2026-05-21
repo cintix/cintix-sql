@@ -144,6 +144,54 @@ export function EditorPanel() {
       },
     });
 
+    editor.addAction({
+      id: 'execute-statement',
+      label: 'Execute Current Statement',
+      keybindings: [
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
+        monaco.KeyMod.Shift | monaco.KeyCode.Enter,
+      ],
+      run: (ed) => {
+        const store = useAppStore.getState();
+        if (!store.activeTabId) return;
+        const pos = ed.getPosition();
+        if (!pos) return;
+        const text = ed.getValue();
+        if (!text.trim()) return;
+
+        // Find current statement between ; boundaries
+        const offset = ed.getModel()!.getOffsetAt(pos);
+        let start = 0;
+        let end = text.length;
+
+        // Find previous ; before cursor
+        for (let i = offset - 1; i >= 0; i--) {
+          if (text[i] === ';') {
+            start = i + 1;
+            break;
+          }
+        }
+
+        // Find next ; after cursor (not at exact cursor position)
+        for (let i = Math.max(offset, offset); i < text.length; i++) {
+          if (text[i] === ';') {
+            end = i;
+            break;
+          }
+        }
+
+        let stmt = text.substring(start, end).trim();
+        // Skip if cursor is on an empty statement (just ; or whitespace between ;)
+        if (!stmt) {
+          return;
+        }
+        // If the statement doesn't end with ; add one
+        if (!stmt.endsWith(';')) stmt += ';';
+
+        store.executeStatement(store.activeTabId, stmt);
+      },
+    });
+
     editor.focus();
   }, []);
 
